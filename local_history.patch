@@ -1,0 +1,537 @@
+Index: application/controllers/affiche_table_contrl.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- application/controllers/affiche_table_contrl.php	(revision )
++++ application/controllers/affiche_table_contrl.php	(revision )
+@@ -1,118 +1,434 @@
+ <?php
+-Class Affiche_table_contrl extends CI_Controller
++class Presence_contrl extends CI_Controller
+ {
+     public function __construct()
+     {
+         parent::__construct();
+         $this->load->library('session');
++        $this->load->library('PHPExcel');
+         $this->load->helper('assets_helper');
+-        $this->load->model('affiche_table_model');
++        $this->load->model('presence_model');
+     }
+     public function index()
+     {
+-        $data['commande_encours'] = $this->affiche_table_model->get_commande_encours();
+-        $this->load->view('affiche_table_view',$data);
++        $this->load->view('presence_view');
+     }
+-    public function list_nom_fic($commande='')
++    public function traitement()
+     {
+-        $data['fichier'] = $this->affiche_table_model->get_fic($commande);
+-        $this->load->view('list_fic_affichetable',$data);
++        $date_debut = $_POST["date_debut"];
++        $date_fin = $_POST["date_fin"];
++        $daty_androany = date('d/m/Y');
++        $valeur_d_a = explode("/",$daty_androany);
++        $valeur_daty_androany = $valeur_d_a[2].$valeur_d_a[1].$valeur_d_a[0];
++        $valeur_d_d = explode("/",$date_debut);
++        $valeur_date_debut = $valeur_d_d[2].$valeur_d_d[1].$valeur_d_d[0];
++        $valeur_d_f = explode("/",$date_fin);
++        $valeur_date_fin = $valeur_d_f[2].$valeur_d_f[1].$valeur_d_f[0];
++        if($valeur_daty_androany >= $valeur_date_debut )
++        {
++            if($valeur_daty_androany >= $valeur_date_fin)
++            {
++                if($valeur_date_debut != $valeur_date_fin)
++                {
++                    if(PHP_OS == 'WINNT')
++                    {
++                        $phpExcel = new PHPExcel();
++                        $pers_actif = $this->presence_model->get_pers_actif();
++                        $l = 0;
++                        $rapport = 2;
++                        $styleArrayvert = array(
++                            'font'  => array(
++                                'color' => array('rgb' => '0f4720'),
++                            ));
++                        foreach($pers_actif as $pers)
++                        {
++                            $nom = $pers->NOM ;
++                            $mat = $pers->MATRICULE;
++                            $fonction = $pers->FONCTION;
++                            $nom_sheet = "$nom"."$mat";
++                            if($l == 0)
++                            {
++                                $phpExcel->getActiveSheet()->setTitle("$nom_sheet");
++                                $phpExcel->setActiveSheetIndex(0);
+-    }
++                            }
+-    public function get_etape($idfichier ='')
++                            if($l !=0)
+-    {
++                            {
+-        $fichier = $this->affiche_table_model->get_fichier($idfichier);
+-        foreach($fichier as $fic)
++                                $worksheet = $phpExcel->createSheet();
++                                $phpExcel->setActiveSheetIndex($l);
++                                $phpExcel->getActiveSheet()->setTitle("$nom_sheet");
++                            }
++                            if($fonction == 'PERS')
+-        {
++                            {
+-            $commande = $fic->COMMANDE;
++                                $heurre_tavail = '8:30:00';
+-        }
++                            }
+-        $data['etape'] = $this->affiche_table_model->get_etape($commande);
+-        $this->load->view('etape_affiche_table',$data);
++                            else if($fonction == 'OS')
++                            {
++                                $heurre_tavail = '6:20:00';
+-    }
++                            }
+-    public function get_list_result($etape='',$commande='',$idfichier='')
++                            else if($fonction == 'CTRL')
+-    {
++                            {
+-        $fichier = $this->affiche_table_model->get_fichier($idfichier);
+-        $data['auc_fic'] ='<label style="color:red" > <script> alert("Aucun fichier trouvé");</script></label>';
+-        foreach($fichier as $fic)
++                                $heurre_tavail = '9:00:00';
++                            }
++                            $i=0;
++                            $j=0;
++                            $ec_positif = array();
++                            $ec_negatif = array();
++
++                            $phpExcel->getActiveSheet()->getColumnDimension('A')->setWidth(20);
++                            $phpExcel->getActiveSheet()->getColumnDimension('B')->setWidth(20);
++                            $phpExcel->getActiveSheet()->getColumnDimension('C')->setWidth(20);
++                            $phpExcel->getActiveSheet()->getColumnDimension('D')->setWidth(20);
++                            $phpExcel->getActiveSheet()->getColumnDimension('E')->setWidth(20);
++                            $phpExcel->getActiveSheet()->getColumnDimension('F')->setWidth(20);
++                            $phpExcel->getActiveSheet()->SetCellValue('A1', 'DATE');
++                            $phpExcel->getActiveSheet()->SetCellValue('B1', 'HEURRE ENTREE');
++                            $phpExcel->getActiveSheet()->SetCellValue('C1', 'HEURRE SORTIE');
++                            $phpExcel->getActiveSheet()->SetCellValue('D1', 'DUREE');
++                            $phpExcel->getActiveSheet()->SetCellValue('E1', 'ECART NEGATIF');
++                            $phpExcel->getActiveSheet()->SetCellValue('F1', 'ECART POSITIF');
++                            $presence_pers = $this->presence_model->get_presence_pers($date_debut,$date_fin,$mat);
++                            if($presence_pers)
+-        {
++                            {
+-            $nom_fichier = $fic->NOM_FICHIER;
++                                $m =2;
++                                foreach($presence_pers as $presence)
++                                {
++                                    $date_entree = $presence->DATE_ENTREE;
++                                    $heurre_entree = $presence->HEURE_ENTREE;
++                                    $heurre_sortie = $presence->HEURE_FIN;
++                                    $dur = $presence->DUREE;
++                                    $heurre_t = new DateTime($heurre_tavail);
++                                    $duree = new DateTime($dur);
++                                    $res = $heurre_t->diff($duree);
++                                    $ecart =  $res->format("%H:%I:%S");
++
++                                    $styleArray = array(
++                                        'font'  => array(
++                                            'color' => array('rgb' => 'FF0000'),
++                                        ));
++
++                                    if( $duree > $heurre_t)
++                                    {
++                                        $ecart_positif = "$ecart";
++                                        $ecart_negatif ='';
++                                        $phpExcel->getActiveSheet()->SetCellValue("A$m", "$date_entree");
++                                        $phpExcel->getActiveSheet()->SetCellValue("B$m", "$heurre_entree");
++                                        $phpExcel->getActiveSheet()->SetCellValue("C$m", "$heurre_sortie");
++                                        $phpExcel->getActiveSheet()->SetCellValue("D$m", "$dur");
++                                        $phpExcel->getActiveSheet()->SetCellValue("E$m", $ecart_negatif);
++                                        $phpExcel->getActiveSheet()->getStyle("E$m")->applyFromArray($styleArray);
++                                        $phpExcel->getActiveSheet()->SetCellValue("F$m", $ecart_positif);
++                                        $phpExcel->getActiveSheet()->getStyle("F$m")->applyFromArray($styleArrayvert);
++
++
++                                        $ec_positif[] = $this->changer_en_sec($ecart_positif);
++                                        $i++;
+-        }
++                                    }
+-        $et = urldecode($etape);
+-        if($et == 'SAISIE 1')
++                                    else if($heurre_t > $duree)
+-        {
++                                    {
+-            $ext = 'S1';
+-            $table_miasa = "$commande"."_"."{$ext}";
+-            $data['fichier'] = $this->affiche_table_model->get_list_result($table_miasa,$commande,$nom_fichier);
+-            $this->load->view('list_res_affichtable',$data);
++                                        $ecart_positif = '';
++                                        $ecart_negatif = "$ecart";
++                                        $phpExcel->getActiveSheet()->SetCellValue("A$m", "$date_entree");
++                                        $phpExcel->getActiveSheet()->SetCellValue("B$m", "$heurre_entree");
++                                        $phpExcel->getActiveSheet()->SetCellValue("C$m", "$heurre_sortie");
++                                        $phpExcel->getActiveSheet()->SetCellValue("D$m", "$dur");
++                                        $phpExcel->getActiveSheet()->SetCellValue("E$m", $ecart_negatif);
++                                        $phpExcel->getActiveSheet()->getStyle("E$m")->applyFromArray($styleArray);
++                                        $phpExcel->getActiveSheet()->SetCellValue("F$m", $ecart_positif);
++                                        $phpExcel->getActiveSheet()->getStyle("F$m")->applyFromArray($styleArrayvert);
++                                        $ec_negatif[] = $this->changer_en_sec($ecart_negatif);
++                                        $j++;
+-        }
++                                    }
+-        if($et == 'CONTROLE' || $et == 'CONTROLE ECH')
++                                    else if($duree == $heurre_t)
+-        {
++                                    {
+-            $ext = 'C';
+-            $table_miasa = "$commande"."_"."{$ext}";
+-            $data['fichier'] =  $this->affiche_table_model->get_list_result($table_miasa,$commande,$nom_fichier);
+-            $this->load->view('list_res_affichtable',$data);
++                                        $ecart_positif = '';
++                                        $ecart_negatif = '';
++                                        $phpExcel->getActiveSheet()->SetCellValue("A$m", "$date_entree");
++                                        $phpExcel->getActiveSheet()->SetCellValue("B$m", "$heurre_entree");
++                                        $phpExcel->getActiveSheet()->SetCellValue("C$m", "$heurre_sortie");
++                                        $phpExcel->getActiveSheet()->SetCellValue("D$m", "$dur");
+-        }
++                                    }
+-        if($et == 'FORMATAGE')
++
++                                    $m ++;
++                                }
++                                //fprintf($dir,"\t\t%s","$heurre_tavail");
++                                $phpExcel->getActiveSheet()->SetCellValue("C$m", "$heurre_tavail");
++                                $heurre_tavail_ensec = $this->changer_en_sec($heurre_tavail);
++                                $produit_h_t_ensec = $heurre_tavail_ensec*($i+$j);
++
++                                $produit_heurre_t = $this->changer_en_heurre($produit_h_t_ensec);
++                                //fprintf($dir,"\t%s",$produit_heurre_t);
++                                $phpExcel->getActiveSheet()->SetCellValue("D$m", "$produit_heurre_t");
++                                if($j!=0)
+-        {
++                                {
+-            $ext = 'Q';
+-            $table_miasa = "$commande"."_"."{$ext}";
+-            $data['fichier'] = $this->affiche_table_model->get_list_result($table_miasa,$commande,$nom_fichier);
+-            $this->load->view('list_res_affichtable',$data);
++                                    $t=0;
++                                    $somme_ecart_negatif="00:00:00";
++                                    $somme_ecart_negatif = $this->changer_en_sec($somme_ecart_negatif);
++                                    while($t<$j)
++                                    {
++                                        $somme_ecart_negatif = $somme_ecart_negatif + $ec_negatif[$t];
++                                        $t++;
+-        }
++                                    }
++                                    $styleArray = array(
++                                        'font'  => array(
++                                            'color' => array('rgb' => 'FF0000'),
++                                        ));
++                                    $somme_ecart_negatif = $this->changer_en_heurre($somme_ecart_negatif);
++                                    $phpExcel->getActiveSheet()->SetCellValue("E$m", "$somme_ecart_negatif");
++                                    $phpExcel->getActiveSheet()->getStyle("E$m")->applyFromArray($styleArray);
+ 
+-    }
++                                }
++                                if($i!=0)
++                                {
++                                    $somme_ecart_positif="00:00:00";
++                                    $somme_ecart_positif = $this->changer_en_sec($somme_ecart_positif);
++                                    $k=0;
++                                    while($k<$i)
++                                    {
++                                        $somme_ecart_positif= $somme_ecart_positif + $ec_positif[$k];
+ 
+-    public function supprimer()
++                                        $k++;
++                                    }
++                                    $somme_ecart_positif = $this->changer_en_heurre($somme_ecart_positif);
++                                    $phpExcel->getActiveSheet()->SetCellValue("F$m", "$somme_ecart_positif");
++                                    $phpExcel->getActiveSheet()->getStyle("F$m")->applyFromArray($styleArrayvert);
++                                }
++                            }
++                            $l++;
++
++                        }
++                        $verifier = @opendir("C:\\Presence");
++                        if(!$verifier)
+-    {
++                        {
+-        $data_sans_commande = ( explode( 'commande=', $this->input->get_post('n_enr') ));
+-        $data_n_enr = ( explode(',', $data_sans_commande[0]));
+-        $data_rest = $data_sans_commande[1];
+-        $data_sans_nlot = (explode('n_lot=', $data_rest));
+-        $data_commande = (explode (',',$data_sans_nlot[0]));
+-        $data_dernier = $data_sans_nlot[1];
+-        $data_sans_etape = (explode('etape=',$data_dernier ));
+-        $data_nlot = (explode (',',$data_sans_etape[0]));
+-        $data_etape = (explode(',',$data_sans_etape[1]));
+-        if($data_n_enr)
++                            mkdir("C:\\Presence");
++                        }
++                        $writer = new PHPExcel_Writer_Excel5($phpExcel);
++                        $rapport = $writer->save("C:\\Presence\\presence.xls");
++                        if($rapport !=2)
+-        {
++                        {
+-        foreach($data_n_enr as $n_enr)
++                            $data['alerte'] = 'Traitement terminé, le fichier se trouve dans C:"\Presence ';
++                        }
++                        else
+-        {
++                        {
+-            foreach($data_commande as $commande)
++                            $data['erreur'] = 'Erreur de traitement';
++                        }
++                    }
++                    else if(PHP_OS == 'Linux')
+-            {
++                    {
+-                foreach($data_nlot as $nlot)
++                        $verifier = @opendir("C:\\Presence");
++                        if(!$verifier)
+-                {
++                        {
+-                    foreach($data_etape as $etape)
++                            mkdir("C:\\Presence");
++                        }
++                        $dir = fopen("C:\\presence\\Presence.txt", "w+");
++                        $rapport = 1;
++                        $pers_actif = $this->presence_model->get_pers_actif();
++                        foreach($pers_actif as $pers)
+-                    {
++                        {
++                            $nom = $pers->NOM ;
++                            $mat = $pers->MATRICULE;
++                            $fonction = $pers->FONCTION;
++                            if($fonction == 'PERS')
++                            {
++                                $heurre_tavail = '8:30:00';
++                            }
++                            else if($fonction == 'OS')
++                            {
++                                $heurre_tavail = '6:20:00';
++                            }
++                            else if($fonction == 'CTRL')
++                            {
++                                $heurre_tavail = '9:00:00';
++                            }
++                            $i=0;
++                            $j=0;
++                            $ec_positif = array();
++                            $ec_negatif = array();
+ 
+-                        if($etape == 'SAISIE 1')
++
++                            //$dir = fopen("C:\\presence\\$nom_fic.docx", "w+");
++                            $dat ="DATE";
++                            $h_entree = "HEURRE ENTREE";
++                            $h_sortie = "HEURRE SORTIE";
++                            $ecart_neg = "ECART NEGATIF";
++                            $ecart_pos = "ECART POSITIF";
++                            $durr = "DUREE";
++
++                            fprintf($dir,"%s\t%s\t%s\t%s\t%s\t%s \r\n",$dat,$h_entree,$h_sortie,$durr,$ecart_neg,$ecart_pos);
++                            // TXT fprintf($dir,"%s\t\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s \r\n",$dat,$h_entree,$h_sortie,$durr,$ecart_neg,$ecart_pos);
++                            $presence_pers = $this->presence_model->get_presence_pers($date_debut,$date_fin,$mat);
++                            if($presence_pers)
+-                        {
++                            {
+-                            $ext = 'S1';
+-                            $table_miasa = "$commande"."_"."{$ext}";
+-                            $this->affiche_table_model->supprimmer($n_enr,$commande,$nlot,$etape,$table_miasa);
++                                foreach($presence_pers as $presence)
++                                {
++                                    $nom_et_mat = "$nom"."$mat";
++                                    $a ="#########################################################################################################";
++                                    fprintf($dir,"%s \r\n\r\n\r\n\r\n",$a);
++                                    fprintf($dir,"%s \r\n\r\n\r\n\r\n",$nom_et_mat);
++                                    $date_entree = $presence->DATE_ENTREE;
++                                    $heurre_entree = $presence->HEURE_ENTREE;
++                                    $heurre_sortie = $presence->HEURE_FIN;
++                                    $dur = $presence->DUREE;
++                                    $heurre_t = new DateTime($heurre_tavail);
++                                    $duree = new DateTime($dur);
++                                    $res = $heurre_t->diff($duree);
++                                    $ecart =  $res->format("%H:%I:%S");
+ 
++                                    if( $duree > $heurre_t)
++                                    {
++                                        $ecart_positif = "$ecart";
++                                        $ecart_negatif ='';
++                                        fprintf($dir,"%s\t%s\t%s\t%s\t%s\t%s \r\n",$date_entree,$heurre_entree,$heurre_sortie,$dur,$ecart_negatif,$ecart_positif);
++                                        // $ecart_negatif ='##:##:##';
++                                        // fprintf($dir,"%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s \r\n",$date_entree,$heurre_entree,$heurre_sortie,$dur,$ecart_negatif,$ecart_positif);
++
++                                        $ec_positif[] = $this->changer_en_sec($ecart_positif);
++                                        $i++;
+-                        }
++                                    }
+-                        if($etape == 'CONTROLE' || $etape == 'CONTROLE ECH')
++                                    else if($heurre_t > $duree)
+-                        {
++                                    {
+-                            $ext = 'C';
+-                            $table_miasa = "$commande"."_"."{$ext}";
+-                            $this->affiche_table_model->supprimmer($n_enr,$commande,$nlot,$etape,$table_miasa);
++                                        $ecart_positif = '';
++                                        $ecart_negatif = "$ecart";
++                                        fprintf($dir,"%s\t%s\t%s\t%s\t%s\t%s \r\n",$date_entree,$heurre_entree,$heurre_sortie,$dur,$ecart_negatif,$ecart_positif);
++                                        //$ecart_positif = '##:##:##';
++                                        //fprintf($dir,"%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s \r\n",$date_entree,$heurre_entree,$heurre_sortie,$dur,$ecart_negatif,$ecart_positif);
++                                        $ec_negatif[] = $this->changer_en_sec($ecart_negatif);
++                                        $j++;
++                                    }
++                                    else if($duree == $heurre_t)
++                                    {
++                                        $ecart_positif = '';
++                                        $ecart_negatif = '';
++                                        fprintf($dir,"%s\t%s\t%s\t%s\t%s\t%s \r\n",$date_entree,$heurre_entree,$heurre_sortie,$dur,$ecart_negatif,$ecart_positif);
++                                    }
+ 
++
+-                        }
++                                }
+-                        if($etape == 'FORMATAGE')
++                                fprintf($dir,"\t\t%s","$heurre_tavail");
++                                $heurre_tavail_ensec = $this->changer_en_sec($heurre_tavail);
++                                $produit_h_t_ensec = $heurre_tavail_ensec*($i+$j);
++
++                                $produit_heurre_t = $this->changer_en_heurre($produit_h_t_ensec);
++                                fprintf($dir,"\t%s",$produit_heurre_t);
++
++
++                                if($j!=0)
+-                        {
++                                {
+-                            $ext = 'Q';
+-                            $table_miasa = "$commande"."_"."{$ext}";
+-                            $this->affiche_table_model->supprimmer($n_enr,$commande,$nlot,$etape,$table_miasa);
++                                    $t=0;
++                                    $somme_ecart_negatif="00:00:00";
++                                    $somme_ecart_negatif = $this->changer_en_sec($somme_ecart_negatif);
++                                    while($t<$j)
++                                    {
++                                        $somme_ecart_negatif = $somme_ecart_negatif + $ec_negatif[$t];
++                                        $t++;
++                                    }
++                                    $somme_ecart_negatif = $this->changer_en_heurre($somme_ecart_negatif);
++                                    fprintf($dir,"\t%s ",$somme_ecart_negatif);
++                                }
++                                if($i!=0)
++                                {
++                                    $somme_ecart_positif="00:00:00";
++                                    $somme_ecart_positif = $this->changer_en_sec($somme_ecart_positif);
++                                    $k=0;
++                                    while($k<$i)
++                                    {
++                                        $somme_ecart_positif= $somme_ecart_positif + $ec_positif[$k];
+ 
++                                        $k++;
+-                        }
++                                    }
++                                    $somme_ecart_positif = $this->changer_en_heurre($somme_ecart_positif);
++                                    if($ecart_negatif =='')
++                                    {
++                                        $rapport = fprintf($dir,"\t\t%s \r\n",$somme_ecart_positif);
+-                    }
++                                    }
++                                    if($ecart_negatif !='')
++                                    {
++                                        $rapport = fprintf($dir,"\t%s \r\n",$somme_ecart_positif);
+-                }
++                                    }
++
++                                    if($rapport)
++                                    {
++                                        $rapport =0;
+-            }
++                                    }
++
+-        }
++                                }
++                            }
+ 
++                        }
+ 
++                        if($rapport  == 0)
++                        {
++                            $data['alerte'] = "Traitement terminé, les fichiers se trouvent dans C:\presence ";
+-        }
++                        }
++                        else if($rapport != 0)
++                        {
++                            $data['erreur'] = "Erreur de traitement";
++                        }
+ 
++                    }
++                }
+ 
++
++                else if($valeur_date_debut==$valeur_date_fin)
++                {
++                    $data['alerte'] = "la date debut ne doit pas etre égal à la date fin ";
+-    }
++                }
++            }
++            else if($valeur_date_fin > $valeur_daty_androany)
++            {
++                $data['alerte'] = "La date fin ne doit pas depasser la date d'aujourduit ";
++            }
++        }
++        else if($valeur_daty_androany < $valeur_date_debut)
++        {
++            $data['alerte'] = "La date debut ne doit pas depasser la date d'aujourduit";
++        }
++        echo json_encode($data);
++    }
++
++    public function changer_en_sec($date)
++    {
++        $date = new DateTime($date);
++        $H_d = $date->format("H");
++        $M_d = $date->format("i");
++        $S_d = $date->format("s");
++
++        $H_d_s = $H_d*3600;
++        $M_d_s = $M_d*60;
++
++        $result = $H_d_s + $M_d_s + $S_d;
++        return $result;
++
++    }
++    public function changer_en_heurre($somme)
++    {
++        $heurre = $somme % 3600;
++        $h = floor($somme/3600);
++
++        $s = $heurre % 60;
++        $m = floor($heurre/60);
++
++        $result = "$h:$m:$s";
++        return $result;
++    }
++    public function  a()
++    {
++        /* CYGWIN_NT-5.1
++ Darwin
++ FreeBSD
++ HP-UX
++ IRIX64
++ Linux
++ NetBSD
++ OpenBSD
++ SunOS
++ Unix
++ WIN32
++ WINNT
++ Windows */
++        var_dump(PHP_OS);
++
++    }
++
++
+ }
+ ?>
+\ No newline at end of file

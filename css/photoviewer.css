@@ -1,0 +1,80 @@
+/* for the ceneral picker boxes */
+html, body{height:100%;}
+
+#column1 {
+	width:15%;
+	float:left;
+	background:#FFF;
+	border: 1px solid;
+	margin-right:10px;
+	padding-bottom:10px;
+	overflow: hidden;
+}
+
+#column1 h3 {background-color: #999; margin-left: 0px; padding-left: 5px;}
+
+#column2 {
+	width:15%;
+	float:left;
+	background:#ccc;
+	border: 1px solid;
+	margin-right:10px;
+	padding-bottom:10px;
+	overflow: hidden;
+}
+
+#column2 h3 {background-color: #999; margin-left: 0px; padding-left: 5px;}
+
+#column3 {
+	width:60%;
+	float:left;
+	background:#bbb;
+	border: 1px solid;
+	margin-right:10px;
+	padding-bottom:10px;
+}
+
+#column3 h3 {background-color: #999; margin-left: 0px; padding-left: 5px;}
+
+/* for the light box */
+.center{
+		position:absolute;
+		left:50%;
+		top: 30px;
+		margin-top:50px;
+		background-color:#eee;
+		padding: 10px;
+		z-index: 201;
+		font-size: 14px;
+		border-bottom: 2px solid #666;
+		border-right: 2px solid #666;
+		display:none;
+	}
+	
+	.grayout{
+		position: absolute;
+		z-index: 50;
+		top: 0px;
+		left: 0px;
+		width: 100%;
+		height: 100%;
+		filter:alpha(opacity=80);   
+    	-moz-opacity: 0.8;   
+    	opacity: 0.8;   
+		font-size: 70pt;
+		background-color: #999; 
+		text-align: center;
+	}
+	
+	.center a{
+		float: right;
+		text-decoration:none;
+		font-weight:bold;
+		padding-bottom:5px;
+	}
+
+a {color: blue;}	
+.photoLink {margin: 5px;}
+.categoryLink {margin: 5px;}
+.thumbnailLink {cursor: url(magnify.cur), pointer;}
+.thumbnailImage {margin: 10px;}
